@@ -1,9 +1,15 @@
+// Funkcja która zwraca obiekt z przekazanymi do niego właściwościami/metodami
+// Ten obiekt odpowiada za rysowanie (metoda draw) i przerysowanie (metoda redraw) canvasu, wgranie grafiki i wyczyszczenie.
+// Dzięki closure hermetyzujemy zmienne img, imgWidth, imgHeight, centerY, lastX i lastY tak aby były prywatne i nie było do nich dostępu od zewnątrz
 const CanvasObj = () => {
     const img = new Image();
     let imgWidth = 0;
     let imgHeight = 0;
     let centerY = 0;
+    let lastX;
+    let lastY;
 
+    // Funkcja która pobiera aktualną grafikę w canvasie i zapisuję ją w postaci png pliku
     const saveToImg = () => {
         const downloadLink = document.querySelector('.download-link');
 
@@ -13,10 +19,12 @@ const CanvasObj = () => {
         downloadLink.click();
     };
 
+    // Ukrywa button wgrania grafiki do canvasu
     const hideUploadBtn = () => {
         document.querySelector('.imageLoaderLabel').classList.add('imageLoaderLabel--hide');
     };
 
+    // Funkcja odpowiada za wyświetlenie wgranej grafiki do canvasu
     const onLoadImage = function () {
         imgWidth = img.width;
         imgHeight = img.height;
@@ -34,6 +42,7 @@ const CanvasObj = () => {
         hideUploadBtn();
     };
 
+    // Funkcja która obsługuję wgranie grafiki, wybranej użytkownikom
     const handleImage = function (e) {
         const reader = new FileReader();
         reader.onload = function (event) {
@@ -43,6 +52,38 @@ const CanvasObj = () => {
         reader.readAsDataURL(e.target.files[0]);
     };
 
+    // Funkcja która jest przyznaczona do rysowania na canvasie
+    const draw = function (x, y, brush, color, size, start) {
+        ctx.beginPath();
+        ctx.lineWidth = size;
+        ctx.lineJoin = 'round';
+        ctx.fillStyle = ctx.strokeStyle = color;
+
+        if (brush === 'square') {
+            ctx.fillRect(x - size / 2, y - size / 2, size, size);
+        } else {
+            if (start) {
+                ctx.moveTo(x - 1, y - 1);
+            } else {
+                ctx.moveTo(lastX, lastY);
+            }
+            ctx.lineTo(x, y);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        lastX = x;
+        lastY = y;
+    };
+
+    // Funkcja która wyczyszcza canvas, pozostawiając tylko wgraną grafikę
+    const clear = () => {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.filter = 'none';
+        ctx.drawImage(img, 0, centerY, imgWidth, imgHeight);
+    };
+
+    //Funkcja która odpowiada za przerysowanie canvasu według danych które przechowuje userDrawing i userSettings obiekty
     const redraw = function () {
         const brightness = userSettings.getBrightness();
         const contrast = userSettings.getContrast();
@@ -88,8 +129,10 @@ const CanvasObj = () => {
     };
 
     return {
+        draw,
         redraw,
         saveToImg,
-        handleImage
+        handleImage,
+        clear
     }
 };
